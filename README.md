@@ -46,21 +46,90 @@ cd Generic-RAG
 
 ### 2. Setup Environment
 
+#### Install Miniconda
+
+**For Linux (Ubuntu/Debian):**
 ```bash
-# Install Miniconda (if not installed)
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
+# Follow the prompts and restart terminal
+source ~/.bashrc
+```
 
+**For macOS (Intel):**
+```bash
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+bash Miniconda3-latest-MacOSX-x86_64.sh
+# Follow the prompts and restart terminal
+source ~/.zshrc  # or ~/.bash_profile
+```
+
+**For macOS (Apple Silicon M1/M2/M3):**
+```bash
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
+bash Miniconda3-latest-MacOSX-arm64.sh
+# Follow the prompts and restart terminal
+source ~/.zshrc  # or ~/.bash_profile
+```
+
+**For Windows:**
+1. Download installer from: https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
+2. Double-click the downloaded file and follow the installation wizard
+3. Check "Add Miniconda3 to my PATH environment variable" during installation
+4. Open **Anaconda Prompt** or **Command Prompt** after installation
+
+#### Create Environment and Install Dependencies
+
+```bash
 # Create conda environment
 conda create -n generic_rag_env python=3.10 -y
+
+# Activate environment
 conda activate generic_rag_env
 
-# Install dependencies
+# Install core packages with conda (recommended for better compatibility)
+conda install numpy pandas jupyter requests beautifulsoup4 -y
+
+# Install PyTorch (choose based on your system)
+# For CPU only
+conda install pytorch torchvision torchaudio cpuonly -c pytorch -y
+
+# For GPU (CUDA 11.8) - if you have NVIDIA GPU
+# conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia -y
+
+# Install specialized packages with pip
 pip install -r requirements.txt
 ```
 
 ### 3. Start Services
 
+#### Install and Start Docker
+
+**For Linux:**
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install docker.io docker-compose
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker $USER
+# Logout and login again
+```
+
+**For macOS:**
+1. Download Docker Desktop from: https://docs.docker.com/desktop/install/mac-install/
+2. Install and start Docker Desktop
+3. Verify installation: `docker --version`
+
+**For Windows:**
+1. Download Docker Desktop from: https://docs.docker.com/desktop/install/windows-install/
+2. Install Docker Desktop
+3. Start Docker Desktop from Start menu
+4. Verify installation: `docker --version`
+
+#### Start OpenSearch
+
+**For Linux/macOS:**
 ```bash
 # Start OpenSearch
 docker run -d \
@@ -75,6 +144,28 @@ docker run -d \
   --ulimit memlock=-1:-1 \
   --ulimit nofile=65536:65536 \
   opensearch:2.11.1
+```
+
+**For Windows (PowerShell or Command Prompt):**
+```cmd
+docker run -d ^
+  --name opensearch-node ^
+  -p 9200:9200 ^
+  -p 9600:9600 ^
+  -e "discovery.type=single-node" ^
+  -e "bootstrap.memory_lock=true" ^
+  -e "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g" ^
+  -e "DISABLE_INSTALL_DEMO_CONFIG=true" ^
+  -e "DISABLE_SECURITY_PLUGIN=true" ^
+  opensearch:2.11.1
+```
+
+#### Setup Hybrid Search Pipeline
+
+**For Linux/macOS:**
+```bash
+# Wait for OpenSearch to start (30-60 seconds)
+sleep 60
 
 # Setup hybrid search pipeline
 curl -X PUT "localhost:9200/_search/pipeline/hybrid-search-pipeline" \
@@ -93,14 +184,60 @@ curl -X PUT "localhost:9200/_search/pipeline/hybrid-search-pipeline" \
       }
     ]
   }'
+```
 
-# Install and start Ollama
+**For Windows (PowerShell):**
+```powershell
+# Wait for OpenSearch to start
+Start-Sleep -Seconds 60
+
+# Setup hybrid search pipeline
+Invoke-RestMethod -Uri "http://localhost:9200/_search/pipeline/hybrid-search-pipeline" `
+  -Method PUT `
+  -ContentType "application/json" `
+  -Body '{
+    "description": "Post processor for hybrid search",
+    "phase_results_processors": [
+      {
+        "normalization-processor": {
+          "normalization": {"technique": "min_max"},
+          "combination": {
+            "technique": "arithmetic_mean",
+            "parameters": {"weights": [0.3, 0.7]}
+          }
+        }
+      }
+    ]
+  }'
+```
+
+#### Install and Start Ollama
+
+**For Linux:**
+```bash
 curl -fsSL https://ollama.ai/install.sh | sh
 ollama serve
+```
 
-# Pull models
+**For macOS:**
+1. Download from: https://ollama.ai/download/mac
+2. Install the .dmg file
+3. Start Ollama from Applications or run: `ollama serve`
+
+**For Windows:**
+1. Download from: https://ollama.ai/download/windows
+2. Install the .exe file
+3. Open Command Prompt or PowerShell and run: `ollama serve`
+
+#### Pull Models
+
+```bash
+# Pull models (same for all platforms)
 ollama pull nomic-embed-text
 ollama pull qwen2.5:0.5b
+
+# Verify models are installed
+ollama list
 ```
 
 ### 4. Initialize Data

@@ -40,7 +40,7 @@ A powerful **Retrieval-Augmented Generation (RAG)** system built with modern AI 
 ### 1. Clone Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/amornpan/Generic-RAG.git
 cd Generic-RAG
 ```
 
@@ -484,9 +484,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-repo/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/discussions)
-- **Email**: your-email@example.com
+- **Repository**: [GitHub](https://github.com/amornpan/Generic-RAG)
+- **Issues**: [Report Issues](https://github.com/amornpan/Generic-RAG/issues)
+- **Discussions**: [Community Discussions](https://github.com/amornpan/Generic-RAG/discussions)
+- **Documentation**: [Wiki](https://github.com/amornpan/Generic-RAG/wiki)
+- **Stars**: ⭐ Star this repo if you find it helpful!
 
 ## 🙏 Acknowledgments
 

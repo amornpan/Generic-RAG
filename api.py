@@ -12,7 +12,7 @@ import asyncio
 from transformers import AutoTokenizer
 import re
 
-# Apply nest_asyncio to avoid runtime errors in Jupyter notebooks
+# Apply nest_asyncio to avoid runtime errors
 nest_asyncio.apply()
 
 app = FastAPI()
@@ -23,20 +23,23 @@ class QueryRequest(BaseModel):
 
 # Initialize HuggingFace embedding model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
 embedding_model_name = 'BAAI/bge-m3'
 embed_model = HuggingFaceEmbedding(model_name=embedding_model_name, max_length=1024, device=device)
 
 # Get embedding dimension
 embeddings = embed_model.get_text_embedding("test")
 dim = len(embeddings)
+print(f"Embedding dimension: {dim}")
 
 # Initialize OpenSearch client and vector store
 endpoint = getenv("OPENSEARCH_ENDPOINT", "http://localhost:9200")
-idx = getenv("OPENSEARCH_INDEX", "dg_md_index")  # Changed index name to reflect markdown content
+idx = getenv("OPENSEARCH_INDEX", "dg_md_index")
 client = OpensearchVectorClient(
     endpoint=endpoint,
     index=idx,
-    dim=dim,  # Use actual dimension instead of hardcoded 1024
+    dim=dim,
     embedding_field="embedding",
     text_field="content",
     search_pipeline="hybrid-search-pipeline",
@@ -77,7 +80,7 @@ def extract_section_from_metadata(metadata: dict) -> str:
     
     # Final fallback
     if "file_path" in metadata:
-        filename = metadata["file_path"].split("/")[-1]
+        filename = metadata["file_path"].split("/")[-1].split("\\")[-1]
         return f"File: {filename}"
     
     return "Unknown Section"
@@ -123,6 +126,7 @@ async def retrieve_query(query: str):
 @app.post("/search")
 async def search(request: QueryRequest):
     try:
+        print(f"Searching for: {request.query}")
         results = await asyncio.create_task(retrieve_query(request.query))
         response = []
         total_tokens = 0
@@ -139,12 +143,19 @@ async def search(request: QueryRequest):
                 "text": expanded_text,
                 "file_path": r.metadata.get("file_path", "N/A"),
                 "tokens": tokens,
-                "page_label": section  # Use section instead of page_label for markdown
+                "page_label": section,
+                "score": r.score if hasattr(r, 'score') else 0.0
             })
-            
+        
+        print(f"Found {len(response)} results")
         return {"results": response, "total_tokens": total_tokens}
     except Exception as e:
+        print(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "device": str(device), "embedding_model": embedding_model_name}
 
 if __name__ == "__main__":
     import uvicorn

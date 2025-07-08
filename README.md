@@ -11,6 +11,7 @@ A powerful **Retrieval-Augmented Generation (RAG)** system built with modern AI 
 - **⚡ Real-time**: Fast API backend with async processing
 - **🐳 Containerized**: Easy deployment with Docker
 - **🔧 Extensible**: Modular design for easy customization
+- **💾 HuggingFace Embeddings**: Uses BAAI/bge-m3 model for high-quality embeddings
 
 ## 🏗️ Architecture
 
@@ -24,8 +25,9 @@ A powerful **Retrieval-Augmented Generation (RAG)** system built with modern AI 
          └───────────────────────┼───────────────────────┘
                                  │
                        ┌─────────▼─────────┐
-                       │      Ollama       │
-                       │   (LLM + Embed)   │
+                       │   HuggingFace     │
+                       │  Embeddings +     │
+                       │     Ollama LLM    │
                        └───────────────────┘
 ```
 
@@ -34,8 +36,9 @@ A powerful **Retrieval-Augmented Generation (RAG)** system built with modern AI 
 ### Prerequisites
 
 - **Docker** & **Docker Compose**
-- **Miniconda** or **Anaconda**
+- **Python 3.10+** (via Miniconda/Anaconda)
 - **Git**
+- **CUDA-compatible GPU** (optional, for faster embeddings)
 
 ### 1. Clone Repository
 
@@ -46,159 +49,58 @@ cd Generic-RAG
 
 ### 2. Setup Environment
 
-#### Install Miniconda
-
-**For Linux (Ubuntu/Debian):**
-```bash
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-# Follow the prompts and restart terminal
-source ~/.bashrc
-```
-
-**For macOS (Intel):**
-```bash
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
-bash Miniconda3-latest-MacOSX-x86_64.sh
-# Follow the prompts and restart terminal
-source ~/.zshrc  # or ~/.bash_profile
-```
-
-**For macOS (Apple Silicon M1/M2/M3):**
-```bash
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
-bash Miniconda3-latest-MacOSX-arm64.sh
-# Follow the prompts and restart terminal
-source ~/.zshrc  # or ~/.bash_profile
-```
+#### Install Miniconda (if not already installed)
 
 **For Windows:**
 1. Download installer from: https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
-2. Double-click the downloaded file and follow the installation wizard
-3. Check "Add Miniconda3 to my PATH environment variable" during installation
-4. Open **Anaconda Prompt** or **Command Prompt** after installation
+2. Install and check "Add Miniconda3 to my PATH environment variable"
+3. Open new Command Prompt or PowerShell
+
+**For Linux/macOS:**
+```bash
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+source ~/.bashrc
+```
 
 #### Create Environment and Install Dependencies
 
 ```bash
 # Create conda environment
 conda create -n generic_rag_env python=3.10 -y
-
-# Activate environment
 conda activate generic_rag_env
 
-# Install core packages with conda (recommended for better compatibility)
-conda install numpy pandas jupyter requests beautifulsoup4 -y
-
-# Install PyTorch (choose based on your system)
-# For CPU only
-conda install pytorch torchvision torchaudio cpuonly -c pytorch -y
-
-# For GPU (CUDA 11.8) - if you have NVIDIA GPU
-# conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia -y
-
-# Install specialized packages with pip
+# Install dependencies
 pip install -r requirements.txt
+
+# For GPU support (optional)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 
 ### 3. Start Services
 
-#### Install and Start Docker
+#### Start Docker (if not running)
 
-**For Linux:**
-```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install docker.io docker-compose
-sudo systemctl start docker
-sudo systemctl enable docker
-sudo usermod -aG docker $USER
-# Logout and login again
-```
-
-**For macOS:**
-1. Download Docker Desktop from: https://docs.docker.com/desktop/install/mac-install/
-2. Install and start Docker Desktop
-3. Verify installation: `docker --version`
-
-**For Windows:**
-1. Download Docker Desktop from: https://docs.docker.com/desktop/install/windows-install/
-2. Install Docker Desktop
-3. Start Docker Desktop from Start menu
-4. Verify installation: `docker --version`
+Make sure Docker Desktop is running on your system.
 
 #### Start OpenSearch
 
-**For Linux/macOS:**
-```bash
-# Start OpenSearch (multi-line)
-docker run -d \
-  --name opensearch-node \
-  -p 9200:9200 \
-  -p 9600:9600 \
-  -e "discovery.type=single-node" \
-  -e "bootstrap.memory_lock=true" \
-  -e "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g" \
-  -e "DISABLE_INSTALL_DEMO_CONFIG=true" \
-  -e "DISABLE_SECURITY_PLUGIN=true" \
-  --ulimit memlock=-1:-1 \
-  --ulimit nofile=65536:65536 \
-  opensearch:2.11.1
-
-# Start OpenSearch (single line)
-docker run -d --name opensearch-node -p 9200:9200 -p 9600:9600 -e "discovery.type=single-node" -e "bootstrap.memory_lock=true" -e "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g" -e "DISABLE_INSTALL_DEMO_CONFIG=true" -e "DISABLE_SECURITY_PLUGIN=true" --ulimit memlock=-1:-1 --ulimit nofile=65536:65536 opensearch:2.11.1
+**For Windows (PowerShell/Command Prompt):**
+```cmd
+docker run -d --name opensearch-node -p 9200:9200 -p 9600:9600 -e "discovery.type=single-node" -e "bootstrap.memory_lock=true" -e "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g" -e "DISABLE_INSTALL_DEMO_CONFIG=true" -e "DISABLE_SECURITY_PLUGIN=true" opensearchproject/opensearch:2.11.1
 ```
 
-**For Windows (PowerShell or Command Prompt):**
-```cmd
-# Multi-line version
-docker run -d ^
-  --name opensearch-node ^
-  -p 9200:9200 ^
-  -p 9600:9600 ^
-  -e "discovery.type=single-node" ^
-  -e "bootstrap.memory_lock=true" ^
-  -e "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g" ^
-  -e "DISABLE_INSTALL_DEMO_CONFIG=true" ^
-  -e "DISABLE_SECURITY_PLUGIN=true" ^
-  opensearch:2.11.1
-
-# Single line version
-docker run -d --name opensearch-node -p 9200:9200 -p 9600:9600 -e "discovery.type=single-node" -e "bootstrap.memory_lock=true" -e "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g" -e "DISABLE_INSTALL_DEMO_CONFIG=true" -e "DISABLE_SECURITY_PLUGIN=true" opensearch:2.11.1
+**For Linux/macOS:**
+```bash
+docker run -d --name opensearch-node -p 9200:9200 -p 9600:9600 -e "discovery.type=single-node" -e "bootstrap.memory_lock=true" -e "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g" -e "DISABLE_INSTALL_DEMO_CONFIG=true" -e "DISABLE_SECURITY_PLUGIN=true" opensearchproject/opensearch:2.11.1
 ```
 
 #### Setup Hybrid Search Pipeline
 
-**For Linux/macOS:**
-```bash
-# Wait for OpenSearch to start (30-60 seconds)
-sleep 60
-
-# Setup hybrid search pipeline
-curl -X PUT "localhost:9200/_search/pipeline/hybrid-search-pipeline" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "description": "Post processor for hybrid search",
-    "phase_results_processors": [
-      {
-        "normalization-processor": {
-          "normalization": {"technique": "min_max"},
-          "combination": {
-            "technique": "arithmetic_mean",
-            "parameters": {"weights": [0.3, 0.7]}
-          }
-        }
-      }
-    ]
-  }'
-```
+Wait for OpenSearch to start (30-60 seconds), then:
 
 **For Windows (PowerShell):**
 ```powershell
-# Wait for OpenSearch to start
-Start-Sleep -Seconds 60
-
-# Setup hybrid search pipeline
 Invoke-RestMethod -Uri "http://localhost:9200/_search/pipeline/hybrid-search-pipeline" `
   -Method PUT `
   -ContentType "application/json" `
@@ -218,41 +120,50 @@ Invoke-RestMethod -Uri "http://localhost:9200/_search/pipeline/hybrid-search-pip
   }'
 ```
 
+**For Linux/macOS:**
+```bash
+curl -X PUT "localhost:9200/_search/pipeline/hybrid-search-pipeline" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Post processor for hybrid search",
+    "phase_results_processors": [
+      {
+        "normalization-processor": {
+          "normalization": {"technique": "min_max"},
+          "combination": {
+            "technique": "arithmetic_mean",
+            "parameters": {"weights": [0.3, 0.7]}
+          }
+        }
+      }
+    ]
+  }'
+```
+
 #### Install and Start Ollama
 
-**For Linux:**
-```bash
-curl -fsSL https://ollama.ai/install.sh | sh
-ollama serve
-```
-
-**For macOS:**
-1. Download from: https://ollama.ai/download/mac
-2. Install the .dmg file
-3. Start Ollama from Applications or run: `ollama serve`
-
-**For Windows:**
-1. Download from: https://ollama.ai/download/windows
-2. Install the .exe file
-3. Open Command Prompt or PowerShell and run: `ollama serve`
-
-#### Pull Models
-
-```bash
-# Pull models (same for all platforms)
-ollama pull nomic-embed-text
-ollama pull qwen2.5:0.5b
-
-# Verify models are installed
-ollama list
-```
+1. Download and install Ollama from: https://ollama.ai/download
+2. Start Ollama service:
+   ```bash
+   ollama serve
+   ```
+3. Pull required model:
+   ```bash
+   ollama pull qwen2.5:0.5b
+   ```
 
 ### 4. Initialize Data
 
 ```bash
-# Create vector index
+# Create vector index with HuggingFace embeddings
 python embedding.py
 ```
+
+This will:
+- Load markdown documents from `md_corpus/` directory
+- Create embeddings using BAAI/bge-m3 model
+- Store vectors in OpenSearch
+- Save index to `md_index.pkl`
 
 ### 5. Run Application
 
@@ -260,7 +171,7 @@ python embedding.py
 # Terminal 1: Start API server
 python api.py
 
-# Terminal 2: Start UI
+# Terminal 2: Start Streamlit UI
 streamlit run app.py
 ```
 
@@ -270,53 +181,39 @@ streamlit run app.py
 - **API Docs**: http://localhost:9000/docs
 - **OpenSearch**: http://localhost:9200
 
+The UI will show the status of all services (API, Ollama, OpenSearch) at the top.
+
 ## 📁 Project Structure
 
 ```
 Generic-RAG/
 ├── README.md                 # This file
 ├── requirements.txt          # Python dependencies
-├── environment.yml          # Conda environment
-├── .env                     # Environment variables
-├── .gitignore              # Git ignore file
+├── .env                     # Environment variables (optional)
 │
-├── api.py                  # FastAPI backend server
-├── app.py                  # Streamlit frontend
-├── embedding.py            # Data indexing script
+├── embedding.py             # Data indexing with HuggingFace embeddings
+├── api.py                   # FastAPI backend with HuggingFace embeddings
+├── app.py                   # Streamlit frontend
 │
-├── md_corpus/              # Knowledge base (Markdown files)
-│   ├── 1.md               # German measles (หัดเยอรมัน)
-│   ├── 2.md               # Cholera (อหิวาตกโรค)
-│   ├── 44.md              # Cataract (ต้อกระจก)
-│   └── 5555.md            # GERD (กรดไหลย้อน)
+├── md_corpus/               # Knowledge base (Markdown files)
+│   ├── 1.md                # German measles (หัดเยอรมัน)
+│   ├── 2.md                # Cholera (อหิวาตกโรค)
+│   ├── 44.md               # Cataract (ต้อกระจก)
+│   └── 5555.md             # GERD (กรดไหลย้อน)
 │
-├── docs/                   # Documentation
-│   ├── setup.md           # Detailed setup guide
-│   ├── api.md             # API documentation
-│   └── troubleshooting.md # Common issues
-│
-└── scripts/               # Utility scripts
-    ├── start_services.sh  # Start all services
-    ├── stop_services.sh   # Stop all services
-    └── reset_index.sh     # Reset OpenSearch index
+└── md_index.pkl            # Saved index (created after running embedding.py)
 ```
 
 ## 🛠️ Configuration
 
 ### Environment Variables (.env)
 
-```env
-# Conda Environment
-CONDA_ENV_NAME=generic_rag_env
+Create a `.env` file (optional) to override defaults:
 
+```env
 # OpenSearch Configuration
 OPENSEARCH_ENDPOINT=http://localhost:9200
 OPENSEARCH_INDEX=dg_md_index
-
-# Ollama Configuration
-OLLAMA_BASE_URL=http://localhost:11434
-EMBEDDING_MODEL=nomic-embed-text
-LLM_MODEL=qwen2.5:0.5b
 
 # API Configuration
 API_HOST=0.0.0.0
@@ -325,12 +222,10 @@ API_PORT=9000
 
 ### Models
 
-| Component | Model | Purpose |
-|-----------|--------|---------|
-| **Embeddings** | `nomic-embed-text` | Convert text to vectors |
-| **LLM** | `qwen2.5:0.5b` | Generate answers (fast, basic) |
-| **LLM** | `qwen2.5:7b` | Generate answers (better quality) |
-| **LLM** | `qwen2.5:14b` | Generate answers (best quality) |
+| Component | Model | Purpose | Notes |
+|-----------|--------|---------|-------|
+| **Embeddings** | `BAAI/bge-m3` | Convert text to vectors | Downloaded automatically (~2GB) |
+| **LLM** | `qwen2.5:0.5b` | Generate answers | Must be pulled via Ollama |
 
 ## 📊 Current Knowledge Base
 
@@ -346,30 +241,33 @@ The system includes Thai medical information covering:
 ### Adding New Documents
 
 1. Place markdown files in `md_corpus/` directory
-2. Run `python embedding.py` to reindex
-3. Restart the API server
+2. Delete old index:
+   ```bash
+   curl -X DELETE "localhost:9200/dg_md_index"
+   ```
+3. Run `python embedding.py` to reindex
+4. Restart the API server
 
 ### Changing Models
 
-```bash
-# Pull different models
-ollama pull qwen2.5:7b          # Better quality
-ollama pull llama2:13b          # Alternative LLM
-ollama pull mxbai-embed-large   # Better embeddings
-
-# Update .env file with new model names
+#### For Embeddings (in embedding.py and api.py):
+```python
+embedding_model_name = 'BAAI/bge-m3'  # Current model
+# Can change to other HuggingFace models like:
+# embedding_model_name = 'intfloat/multilingual-e5-large'
 ```
 
-### Customizing System Prompt
-
-Edit the `system_prompt` variable in `app.py`:
-
+#### For LLM (in app.py):
 ```python
-system_prompt = """คุณเป็นผู้เชี่ยวชาญเกี่ยวกับ [YOUR DOMAIN]
-ในการตอบคำถาม:
-1. ใช้เฉพาะข้อมูลที่ให้มาในผลการค้นหา
-2. หากไม่มีข้อมูลเพียงพอ ให้ตอบว่า "ขออภัย ไม่มีข้อมูลเพียงพอ"
-..."""
+llm_model = "qwen2.5:0.5b"  # Current model
+# Can change to:
+# llm_model = "qwen2.5:7b"  # Better quality
+# llm_model = "llama2:13b"  # Alternative
+```
+
+Remember to pull new Ollama models:
+```bash
+ollama pull qwen2.5:7b
 ```
 
 ## 🧪 Testing
@@ -377,144 +275,114 @@ system_prompt = """คุณเป็นผู้เชี่ยวชาญเ�
 ### API Testing
 
 ```bash
+# Test API health
+curl http://localhost:9000/health
+
 # Test search endpoint
 curl -X POST "http://localhost:9000/search" \
   -H "Content-Type: application/json" \
   -d '{"query": "อาการของโรคหัดเยอรมัน"}'
-
-# Test OpenSearch
-curl -X GET "localhost:9200/_cluster/health"
-
-# Test Ollama
-curl http://localhost:11434/api/tags
 ```
 
-### Performance Testing
+### OpenSearch Collections Management
 
 ```bash
-# Test hybrid search performance
-python -c "
-import requests
-import time
-for i in range(10):
-    start = time.time()
-    r = requests.post('http://localhost:9000/search', 
-                     json={'query': 'ต้อกระจกรักษาอย่างไร'})
-    print(f'Query {i+1}: {time.time()-start:.2f}s')
-"
+# View all indices
+curl -X GET "localhost:9200/_cat/indices?v"
+
+# View index details
+curl -X GET "localhost:9200/dg_md_index?pretty"
+
+# Count documents in index
+curl -X GET "localhost:9200/dg_md_index/_count?pretty"
+
+# View sample documents
+curl -X GET "localhost:9200/dg_md_index/_search?pretty" -H 'Content-Type: application/json' -d'
+{
+  "size": 5,
+  "query": {
+    "match_all": {}
+  }
+}'
 ```
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **OpenSearch won't start**
+1. **"No module named 'xxx'" Error**
    ```bash
-   docker logs opensearch-node
-   # Usually memory issue - increase Docker memory limit
+   pip install -r requirements.txt
    ```
 
-2. **Ollama connection failed**
+2. **OpenSearch connection failed**
    ```bash
-   ollama ps
-   # Check if service is running
+   # Check if OpenSearch is running
+   docker ps
+   # Check OpenSearch health
+   curl http://localhost:9200/_cluster/health
+   ```
+
+3. **Ollama not responding**
+   ```bash
+   # Make sure Ollama is running
    ollama serve
+   # Check installed models
+   ollama list
    ```
 
-3. **Conda environment issues**
+4. **No search results**
    ```bash
-   conda env remove -n generic_rag_env
-   conda env create -f environment.yml
+   # Check document count
+   curl -X GET "localhost:9200/dg_md_index/_count"
+   # If 0, rerun embedding.py
+   python embedding.py
    ```
 
-4. **Hybrid search not working**
+5. **GPU not detected**
    ```bash
-   # Recreate search pipeline
-   curl -X DELETE "localhost:9200/_search/pipeline/hybrid-search-pipeline"
-   # Run setup script again
+   # Check PyTorch GPU support
+   python -c "import torch; print(torch.cuda.is_available())"
    ```
-
-### Logs Location
-
-- **OpenSearch**: `docker logs opensearch-node`
-- **Ollama**: Check terminal where `ollama serve` is running
-- **API**: Check terminal where `python api.py` is running
-- **Streamlit**: Check terminal where `streamlit run app.py` is running
 
 ## 📈 Performance Optimization
 
 ### Hardware Requirements
 
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| **RAM** | 8GB | 16GB+ |
-| **CPU** | 4 cores | 8+ cores |
-| **Storage** | 10GB | 50GB+ |
-| **GPU** | None | CUDA-compatible |
+| Component | Minimum | Recommended | Notes |
+|-----------|---------|-------------|-------|
+| **RAM** | 8GB | 16GB+ | HuggingFace models need memory |
+| **CPU** | 4 cores | 8+ cores | - |
+| **Storage** | 10GB | 50GB+ | For models and data |
+| **GPU** | None | CUDA 11.8+ | Speeds up embeddings |
 
-### Optimization Tips
+### Tips
 
-1. **Use GPU**: Install CUDA-enabled PyTorch for faster embeddings
-2. **Increase Memory**: Allocate more memory to OpenSearch
-3. **Better Models**: Use larger models for better quality
-4. **SSD Storage**: Use SSD for better I/O performance
-5. **Load Balancing**: Use multiple API instances for high load
+1. **Use GPU**: Significantly faster for embeddings
+2. **Batch Processing**: embedding.py processes in batches automatically
+3. **Adjust Chunk Size**: In embedding.py, modify `chunk_size=1024`
+4. **Use Larger LLM**: For better answers, use `qwen2.5:7b` or larger
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Setup
-
-```bash
-# Install development dependencies
-pip install -r requirements-dev.txt
-
-# Run tests
-python -m pytest tests/
-
-# Format code
-black .
-isort .
-
-# Lint code
-flake8 .
-```
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 📞 Support
-
-- **Repository**: [GitHub](https://github.com/amornpan/Generic-RAG)
-- **Issues**: [Report Issues](https://github.com/amornpan/Generic-RAG/issues)
-- **Discussions**: [Community Discussions](https://github.com/amornpan/Generic-RAG/discussions)
-- **Documentation**: [Wiki](https://github.com/amornpan/Generic-RAG/wiki)
-- **Stars**: ⭐ Star this repo if you find it helpful!
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
 - **LlamaIndex** - RAG framework
 - **OpenSearch** - Vector database
 - **Ollama** - Local LLM runtime
+- **HuggingFace** - Embedding models
 - **Streamlit** - Web interface
 - **FastAPI** - API framework
-- **เมดไทย (Medthai)** - Medical knowledge source
-
-## 🔄 Changelog
-
-### v1.0.0 (2024-XX-XX)
-- Initial release
-- Hybrid search implementation
-- Thai medical knowledge base
-- Streamlit UI
-- FastAPI backend
-- Docker deployment
 
 ---
 

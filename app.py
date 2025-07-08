@@ -87,19 +87,26 @@ def process_question(question):
     if response.status_code == 200:
         data = response.json()
         search_results = data["results"]
-        total_tokens = data["total_tokens"]
+        total_tokens = data.get("total_tokens", 0)
         
         cleaned_search_results = [
             {
                 "text": clean_ellipsis(result['text']),
                 "file_path": result['file_path'],
-                "tokens": result['tokens'],
-                "section": result.get('page_label', 'N/A')  # Renamed from page_label to section
+                "tokens": result.get('tokens', 0),
+                "section": result.get('page_label', 'N/A'),
+                "score": result.get('score', 0.0)
             } for result in search_results
         ]
         
-        response_text = "\n\n".join([f"Text: {result['text']}\nFile Path: {result['file_path']}\nTokens: {result['tokens']}\nSection: {result['section']}" for result in cleaned_search_results])
+        response_text = "\n\n".join([
+            f"Text: {result['text']}\nFile Path: {result['file_path']}\nTokens: {result['tokens']}\nSection: {result['section']}\nScore: {result['score']:.4f}" 
+            for result in cleaned_search_results
+        ])
 
+        # Use specified Ollama model for LLM
+        llm_model = "qwen2.5:0.5b"  # Using the smaller model as specified in README
+        
         llm_prompt = f"""<s>[INST] <<SYS>>
 {system_prompt}
 <</SYS>>
@@ -115,26 +122,63 @@ def process_question(question):
         st.session_state.llm_prompt = llm_prompt
 
         llm_payload = {
-            "model": "qwen2.5:32b",
+            "model": llm_model,
             "stream": False,
             "prompt": llm_prompt,
         }
-        llm_response = requests.post("http://localhost:11434/api/generate", json=llm_payload)
+        
+        try:
+            llm_response = requests.post("http://localhost:11434/api/generate", json=llm_payload)
 
-        if llm_response.status_code == 200:
-            llm_output = llm_response.json()["response"]
-            cleaned_output = clean_ellipsis(llm_output)
-            add_to_chat_history("Search Results", response_text)
-            add_to_chat_history("AI", cleaned_output)
-            add_to_chat_history("Total Tokens", str(total_tokens))
-        else:
-            add_to_chat_history("Error", f"LLM Error: {llm_response.status_code}")
+            if llm_response.status_code == 200:
+                llm_output = llm_response.json()["response"]
+                cleaned_output = clean_ellipsis(llm_output)
+                add_to_chat_history("Search Results", response_text)
+                add_to_chat_history("AI", cleaned_output)
+                add_to_chat_history("Total Tokens", str(total_tokens))
+            else:
+                add_to_chat_history("Error", f"LLM Error: {llm_response.status_code} - Make sure Ollama is running and model '{llm_model}' is installed")
+        except requests.exceptions.ConnectionError:
+            add_to_chat_history("Error", "Cannot connect to Ollama. Please make sure Ollama is running (ollama serve)")
     else:
         add_to_chat_history("Error", f"Search Error: {response.status_code}")
 
 # Main content
 st.title("ระบบค้นหาและตอบคำถามเกี่ยวกับ ปัญหาสุขภาพ")
 st.write("ยินดีต้อนรับสู่ระบบอัจฉริยะสำหรับค้นหาข้อมูลและตอบคำถามเกี่ยวกับ ปัญหาสุขภาพ")
+
+# Show system status
+col1, col2, col3 = st.columns(3)
+with col1:
+    try:
+        api_health = requests.get("http://localhost:9000/health", timeout=2)
+        if api_health.status_code == 200:
+            health_data = api_health.json()
+            st.success(f"✅ API: Online ({health_data.get('device', 'cpu')})")
+        else:
+            st.error("❌ API: Offline")
+    except:
+        st.error("❌ API: Offline")
+
+with col2:
+    try:
+        ollama_health = requests.get("http://localhost:11434/api/tags", timeout=2)
+        if ollama_health.status_code == 200:
+            st.success("✅ Ollama: Online")
+        else:
+            st.error("❌ Ollama: Offline")
+    except:
+        st.error("❌ Ollama: Offline")
+
+with col3:
+    try:
+        opensearch_health = requests.get("http://localhost:9200/_cluster/health", timeout=2)
+        if opensearch_health.status_code == 200:
+            st.success("✅ OpenSearch: Online")
+        else:
+            st.error("❌ OpenSearch: Offline")
+    except:
+        st.error("❌ OpenSearch: Offline")
 
 # Use st.form to create a form
 with st.form(key='question_form'):
@@ -179,9 +223,10 @@ if st.session_state.chat_history:
             
             for idx, result in enumerate(search_results.split("\n\n")):
                 parts = result.split("\n")
-                if len(parts) >= 4:
+                if len(parts) >= 5:  # Updated to handle score field
                     file_path = parts[1].split(": ")[1]
                     section = parts[3].split(": ")[1]
+                    score = parts[4].split(": ")[1] if len(parts) > 4 else "0.0000"
                     
                     col1, col2 = st.columns([3, 2])
                     
@@ -191,6 +236,7 @@ if st.session_state.chat_history:
                                     f'<p style="font-size: 14px; color: #004085;">{parts[1]}</p>'
                                     f'<p style="font-size: 14px; color: #004085;">{parts[2]}</p>'
                                     f'<p style="font-size: 14px; color: #004085;">{parts[3]}</p>'
+                                    f'<p style="font-size: 14px; color: #004085;">Score: {score}</p>'
                                     f'</div>', unsafe_allow_html=True)
                         
                         md_key = f"show_md_{i}_{idx}"

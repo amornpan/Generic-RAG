@@ -131,7 +131,7 @@ sudo usermod -aG docker $USER
 
 **For Linux/macOS:**
 ```bash
-# Start OpenSearch
+# Start OpenSearch (multi-line)
 docker run -d \
   --name opensearch-node \
   -p 9200:9200 \
@@ -144,10 +144,14 @@ docker run -d \
   --ulimit memlock=-1:-1 \
   --ulimit nofile=65536:65536 \
   opensearch:2.11.1
+
+# Start OpenSearch (single line)
+docker run -d --name opensearch-node -p 9200:9200 -p 9600:9600 -e "discovery.type=single-node" -e "bootstrap.memory_lock=true" -e "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g" -e "DISABLE_INSTALL_DEMO_CONFIG=true" -e "DISABLE_SECURITY_PLUGIN=true" --ulimit memlock=-1:-1 --ulimit nofile=65536:65536 opensearch:2.11.1
 ```
 
 **For Windows (PowerShell or Command Prompt):**
 ```cmd
+# Multi-line version
 docker run -d ^
   --name opensearch-node ^
   -p 9200:9200 ^
@@ -158,6 +162,9 @@ docker run -d ^
   -e "DISABLE_INSTALL_DEMO_CONFIG=true" ^
   -e "DISABLE_SECURITY_PLUGIN=true" ^
   opensearch:2.11.1
+
+# Single line version
+docker run -d --name opensearch-node -p 9200:9200 -p 9600:9600 -e "discovery.type=single-node" -e "bootstrap.memory_lock=true" -e "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g" -e "DISABLE_INSTALL_DEMO_CONFIG=true" -e "DISABLE_SECURITY_PLUGIN=true" opensearch:2.11.1
 ```
 
 #### Setup Hybrid Search Pipeline

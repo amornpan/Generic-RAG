@@ -38,6 +38,7 @@ A powerful **Retrieval-Augmented Generation (RAG)** system built with modern AI 
 - **Docker** & **Docker Compose**
 - **Python 3.10+** (via Miniconda/Anaconda)
 - **Git**
+- **PyTorch 2.6+** (Required for security fix with latest transformers)
 - **CUDA-compatible GPU** (optional, for faster embeddings)
 
 ### 1. Clone Repository
@@ -70,11 +71,15 @@ source ~/.bashrc
 conda create -n generic_rag_env python=3.10 -y
 conda activate generic_rag_env
 
-# Install dependencies
-pip install -r requirements.txt
+# Install PyTorch 2.6+ first (IMPORTANT: Required for security fix)
+# For CPU version:
+pip install torch>=2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
-# For GPU support (optional)
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+# For GPU version (CUDA 11.8):
+# pip install torch>=2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# Install other dependencies
+pip install -r requirements.txt
 ```
 
 ### 3. Start Services
@@ -315,7 +320,17 @@ curl -X GET "localhost:9200/dg_md_index/_search?pretty" -H 'Content-Type: applic
    pip install -r requirements.txt
    ```
 
-2. **OpenSearch connection failed**
+2. **PyTorch Security Error (torch.load vulnerability)**
+   ```bash
+   # This error occurs with transformers 4.37+ and PyTorch < 2.6
+   # Solution: Upgrade PyTorch to 2.6+
+   pip install torch>=2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+   
+   # Alternative: Downgrade transformers
+   # pip install transformers==4.36.0 tokenizers==0.15.0
+   ```
+
+3. **OpenSearch connection failed**
    ```bash
    # Check if OpenSearch is running
    docker ps
@@ -323,7 +338,7 @@ curl -X GET "localhost:9200/dg_md_index/_search?pretty" -H 'Content-Type: applic
    curl http://localhost:9200/_cluster/health
    ```
 
-3. **Ollama not responding**
+4. **Ollama not responding**
    ```bash
    # Make sure Ollama is running
    ollama serve
@@ -331,7 +346,7 @@ curl -X GET "localhost:9200/dg_md_index/_search?pretty" -H 'Content-Type: applic
    ollama list
    ```
 
-4. **No search results**
+5. **No search results**
    ```bash
    # Check document count
    curl -X GET "localhost:9200/dg_md_index/_count"
@@ -339,10 +354,12 @@ curl -X GET "localhost:9200/dg_md_index/_search?pretty" -H 'Content-Type: applic
    python embedding.py
    ```
 
-5. **GPU not detected**
+6. **GPU not detected**
    ```bash
    # Check PyTorch GPU support
    python -c "import torch; print(torch.cuda.is_available())"
+   # If False, install GPU version of PyTorch
+   pip install torch>=2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
    ```
 
 ## 📈 Performance Optimization

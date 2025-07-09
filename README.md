@@ -340,8 +340,6 @@ curl -X GET "localhost:9200/dg_md_index/_search?pretty" -H 'Content-Type: applic
 
 4. **Ollama not responding**
    ```bash
-   # Make sure Ollama is running
-   ollama serve
    # Check installed models
    ollama list
    ```

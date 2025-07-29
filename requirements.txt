@@ -4,7 +4,7 @@ nest-asyncio>=1.5.8
 
 # PyTorch 2.6+ (Required for latest transformers security fix)
 # For CPU version
---index-url https://download.pytorch.org/whl/cpu
+#--index-url https://download.pytorch.org/whl/cpu
 torch>=2.6.0
 torchvision>=0.21.0
 torchaudio>=2.6.0

@@ -150,7 +150,7 @@ curl -X PUT "localhost:9200/_search/pipeline/hybrid-search-pipeline" \
 1. Download and install Ollama from: https://ollama.ai/download
 2. Start Ollama service:
    ```bash
-   ollama serve
+   ollama list
    ```
 3. Pull required model:
    ```bash

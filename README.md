@@ -186,6 +186,8 @@ python api.py
 
 # Terminal 2: Start Streamlit UI
 streamlit run app.py
+
+streamlit run app.py --server.address 0.0.0.0 --server.port 8501
 ```
 
 ### 6. Access Application

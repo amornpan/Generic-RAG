@@ -105,7 +105,7 @@ def process_question(question):
         ])
 
         # Use specified Ollama model for LLM
-        llm_model = "qwen2.5:0.5b"  # Using the smaller model as specified in README
+        llm_model = "qwen2.5:7b"  # Using the smaller model as specified in README
         
         llm_prompt = f"""<s>[INST] <<SYS>>
 {system_prompt}

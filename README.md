@@ -62,6 +62,10 @@ cd Generic-RAG
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
 source ~/.bashrc
+
+# Accept ToS for the main Anaconda channels
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 ```
 
 #### Create Environment and Install Dependencies
@@ -73,7 +77,7 @@ conda activate generic_rag_env
 
 # Install PyTorch 2.6+ first (IMPORTANT: Required for security fix)
 # For CPU version:
-pip install torch>=2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+#pip install torch>=2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 # For GPU version (CUDA 11.8):
 # pip install torch>=2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118

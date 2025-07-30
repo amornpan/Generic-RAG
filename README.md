@@ -152,11 +152,15 @@ curl -X PUT "localhost:9200/_search/pipeline/hybrid-search-pipeline" \
 #### Install and Start Ollama
 
 1. Download and install Ollama from: https://ollama.ai/download
-2. Start Ollama service:
+2. For mac/linux
+   ```bash
+   curl -fsSL https://ollama.com/install.sh | sh
+   ```
+3. Start Ollama service:
    ```bash
    ollama list
    ```
-3. Pull required model:
+4. Pull required model:
    ```bash
    ollama pull qwen2.5:0.5b
    ```

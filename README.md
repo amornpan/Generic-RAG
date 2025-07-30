@@ -162,7 +162,7 @@ curl -X PUT "localhost:9200/_search/pipeline/hybrid-search-pipeline" \
    ```
 4. Pull required model:
    ```bash
-   ollama pull qwen2.5:0.5b
+   ollama pull qwen2.5:7b
    ```
 
 ### 4. Initialize Data
@@ -238,7 +238,7 @@ API_PORT=9000
 | Component | Model | Purpose | Notes |
 |-----------|--------|---------|-------|
 | **Embeddings** | `BAAI/bge-m3` | Convert text to vectors | Downloaded automatically (~2GB) |
-| **LLM** | `qwen2.5:0.5b` | Generate answers | Must be pulled via Ollama |
+| **LLM** | `qwen2.5:7b` | Generate answers | Must be pulled via Ollama |
 
 ## 📊 Current Knowledge Base
 
@@ -272,7 +272,7 @@ embedding_model_name = 'BAAI/bge-m3'  # Current model
 
 #### For LLM (in app.py):
 ```python
-llm_model = "qwen2.5:0.5b"  # Current model
+llm_model = "qwen2.5:7b"  # Current model
 # Can change to:
 # llm_model = "qwen2.5:7b"  # Better quality
 # llm_model = "llama2:13b"  # Alternative

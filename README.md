@@ -78,6 +78,10 @@ conda activate generic_rag_env
 # if error
 #conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/msys2
 
+# conda init
+
+# conda create -n generic_rag_env python=3.10 -c conda-forge -y
+
 # Install PyTorch 2.6+ first (IMPORTANT: Required for security fix)
 # For CPU version:
 #pip install torch>=2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
